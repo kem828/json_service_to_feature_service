@@ -2,7 +2,9 @@
 """
 Created on Thu Jan 30 12:01:12 2020
 
-@author: 388560
+@author: Keinan Marks
+City of Los Angeles Solid Resources Commercial Franchise Division
+recycLA
 """
 
 
@@ -23,10 +25,15 @@ from arcgis.geocoding import Geocoder,batch_geocode
 from arcgis.features import FeatureLayerCollection
 
 
-#This is an overwought function to geocode an array from a list of geocoding services.
+#This is an overwrought function to geocode an array from a list of geocoding services.
 #If you aren't using more than one geocoder, probably better to just use the built in batch_geocode or geocode_from_file
 #But this should still work fine
 #Defined as used in credentials.json
+
+
+#Basically uses batch_geocode for a pass via the primary and the geocode function to fill in the gaps moving down the list.
+#Some additional logic that was written specifically for city of los angeles bureau of engineering services, ie take match >85 with zip
+#Take match >95 without zip
 def collect_and_geocode_addresses_batch(array1,address_index,gis,geocoder_list = [],pass_nan = True,lat_index = False, sr = 4326):
     array = array1
     batches = int(len(array)/1000) + 2
@@ -133,14 +140,14 @@ def overwrite_feature_layer(csv_file,feature_layer_id,username,password,gis,upda
     from arcgis.gis import ContentManager
     import datetime
     
+    #add csv to portal
     if feature_layer_id == '' or None:
         print('Creating New Feature Service')
         csv_item = gis.content.add({}, csv_file)
-        #d = gis.content.analyze(item = csv_item.id)
-        #for k,v in parameters.items():
-            #d['publishParameters'][k] = v
-        
+
+        #publish portal csv to feature layer with pass params
         csv_lyr = csv_item.publish(publish_parameters = parameters)
+        #might consider writing item id to credentials?
         return 'New Service Created, item id ' + str(csv_lyr.id)
     else:
         print('Beginning Update Process')
@@ -204,7 +211,7 @@ def json_to_array(json_data):
         output_array.append(row)
     return output_array
         
-        
+#Body        
 if __name__ == '__main__':
     
     then = datetime.today()
@@ -218,8 +225,10 @@ if __name__ == '__main__':
         with open(credentials_json, 'r') as f:
             print("Loading Environment Variables...")
             credentials = json.load(f)
-
+            #either arcgis online portal or hosted enterprise
             arcgis_portal = credentials['arcgis_portal']
+            
+            #agol or portal username. for domain use DOMAIN\\USERNAME eg SAN\\388560
             username = credentials['username']
             password = credentials['password']
             json_source = credentials['json_source']
@@ -253,14 +262,18 @@ if __name__ == '__main__':
         #get the index of the address to pass to the geocoder
         address_index = find_index_value(array,address)
         array = collect_and_geocode_addresses_batch(array,address_index,gis)
+        #change passed lat long headers to those assigned by the bonkers function
         lat = 'Latitude'
         lng = 'Longitude'
     
     #dir_path = os.path.dirname(os.path.realpath(__file__))
     
     #Assumed xy
-
+    #publish params docs available here: https://developers.arcgis.com/rest/users-groups-and-items/publish-item.htm
     params = {'locationType' : 'coordinates', 'latitudeFieldName' : lat, 'longitudeFieldName' : lng}
+    
+    #output csv to script directory
     csv_object = dump_to_csv(array, out_path = new_service_name + '.csv')
+    #push csv to portal
     overwrite_feature_layer(csv_object,feature_layer_id,username,password,gis,mappings = mapping, parameters = params)
     sys.exit('Complete')
