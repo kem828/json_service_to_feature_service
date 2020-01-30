@@ -252,3 +252,4 @@ if __name__ == '__main__':
     params = {'locationType' : 'coordinates', 'latitudeFieldName' : lat, 'longitudeFieldName' : lng}
     csv_object = dump_to_csv(array, out_path = new_service_name + '.csv')
     overwrite_feature_layer(csv_object,feature_layer_id,username,password,gis,mappings = mapping, parameters = params)
+    sys.exit('Complete')
