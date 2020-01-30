@@ -181,7 +181,10 @@ def json_to_array(json_data):
     for header,value in data[0].items():
         headers.append(header)
     output_array.append(headers)
-
+#This could be handled much better
+#Attempt to clean it up to point where numerics are resolved
+#and it is still standard csv compliant
+#Will rewrite to appropriately type and convert fields at some point
     for vals in data:
         row = []
         for k,v in vals.items():
@@ -207,7 +210,9 @@ if __name__ == '__main__':
     then = datetime.today()
     then = then - timedelta(microseconds=then.microsecond)
     print("\nInitiating script at", then, "\n")
-
+    
+    
+    #Collect all paramters from config json
     credentials_json = r"credentials.json"
     try:
         with open(credentials_json, 'r') as f:
@@ -225,7 +230,12 @@ if __name__ == '__main__':
             address = credentials['address_field_name']
             feature_layer_id = credentials['item_id']
             new_service_name = credentials['new_service_name']
+            proxy_bypass = credentials['proxy_bypass']
             
+            
+            #This helps resolve hitting internal arcgis enterprise servers behind a proxy
+            if proxy_bypass != '':
+                os.environ['NO_PROXY'] = proxy_bypass
             
             response = requests.get(json_source)
             
@@ -235,11 +245,12 @@ if __name__ == '__main__':
         
         
     array = json_to_array(response)   
-    
+    #Create GIS object from defined portal, username and password
     gis = GIS(arcgis_portal,username,password)
-    params = {}
+    
+    #Add lat and long to each array row is geocoding flag != no
     if geocoding.upper() != 'NO':
-        
+        #get the index of the address to pass to the geocoder
         address_index = find_index_value(array,address)
         array = collect_and_geocode_addresses_batch(array,address_index,gis)
         lat = 'Latitude'
