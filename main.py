@@ -3,8 +3,7 @@
 Created on Thu Jan 30 12:01:12 2020
 
 @author: Keinan Marks
-City of Los Angeles Solid Resources Commercial Franchise Division
-recycLA
+
 """
 
 
