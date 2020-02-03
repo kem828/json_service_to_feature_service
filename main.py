@@ -13,13 +13,13 @@ Created on Thu Jan 30 12:01:12 2020
 import json
 import requests
 from datetime import date, timedelta, datetime
+import os
 
 
 #External Dependencies
 import arcgis
 from arcgis.gis import GIS
 from arcgis import features
-import os,io,requests
 from arcgis.geocoding import Geocoder,batch_geocode
 from arcgis.features import FeatureLayerCollection
 
