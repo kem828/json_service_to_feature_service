@@ -33,9 +33,9 @@ from arcgis.features import FeatureLayerCollection
 #Basically uses batch_geocode for a pass via the primary and the geocode function to fill in the gaps moving down the list.
 #Some additional logic that was written specifically for city of los angeles bureau of engineering services, ie take match >85 with zip
 #Take match >95 without zip
-def collect_and_geocode_addresses_batch(array1,address_index,gis,geocoder_list = [],pass_nan = True,lat_index = False, sr = 4326):
+def collect_and_geocode_addresses_batch(array1,address_index,gis,geocoder_list = [],pass_nan = True,lat_index = False, sr = 4326,batch_size = 1000):
     array = array1
-    batches = int(len(array)/1000) + 2
+    batches = int(len(array)/batch_size) + 2
     from arcgis.gis import GIS
     from arcgis.geocoding import get_geocoders, batch_geocode, Geocoder, geocode
     address_list = []
@@ -49,8 +49,8 @@ def collect_and_geocode_addresses_batch(array1,address_index,gis,geocoder_list =
         pass
     for r in range(1,batches):
         #print(r)
-        start = 1000 * (r - 1)
-        end = 1000 * r
+        start = batch_size * (r - 1)
+        end = batch_size * r
 
         try:
             results.extend(batch_geocode(address_list[start:end],geocoder = geocoder,out_sr = sr))
