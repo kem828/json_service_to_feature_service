@@ -83,22 +83,27 @@ def collect_and_geocode_addresses_batch(array1,address_index,gis,geocoder_list =
                         #print(geocoders,address_list[i])
                         geocoder = Geocoder(geocoders,gis = gis)
                         value = geocode(address_list[i], geocoder = geocoder,out_sr = sr)
-                        if [value[0]['location']['x'],value[0]['location']['y']] != ['NaN', 'NaN'] and int(value[0]['score']) > 85:
-                            inter_list[i] = [value[0]['location']['x'],value[0]['location']['y'],str(value[0]['attributes']['Match_addr']).replace(',','')]
-                            #print(inter_list[i],geocoders)
-                            break
-                        else:
-                            try:
-                                value = geocode((address_list[i].split(','))[0], geocoder = geocoder,out_sr = sr)
-                                if [value[0]['location']['x'],value[0]['location']['y']] != ['NaN', 'NaN'] and int(value[0]['score']) > 95:
+                        if len(value) > 0:
+                            if [value[0]['location']['x'],value[0]['location']['y']] != ['NaN', 'NaN'] and int(value[0]['score']) > 85:
+                                inter_list[i] = [value[0]['location']['x'],value[0]['location']['y'],str(value[0]['attributes']['Match_addr']).replace(',','')]
+                                #print(inter_list[i],geocoders)
+                                break
+                        try:
+
+                            value = geocode((address_list[i].split(','))[0], geocoder = geocoder,out_sr = sr)
+                            if len(value) > 0:
+
+                                #if [value[0]['location']['x'],value[0]['location']['y']] != ['NaN', 'NaN'] and int(value[0]['score']) > 95:
+                                if int(value[0]['score']) > 95:
+                                    #print('matched without zip')
                                     inter_list[i] = [value[0]['location']['x'],value[0]['location']['y'],str(value[0]['attributes']['Match_addr']).replace(',','')]
                                     break
                                     #print(inter_list[i],geocoders)
-                                else:                                    
-                                    inter_list[i] = ['NaN', 'NaN','NaN']
-                            except Exception as e:
-                                #print(e,value,address_list[i].split(','))[0])
+                            else:                                    
                                 inter_list[i] = ['NaN', 'NaN','NaN']
+                        except Exception as e:
+                            print(e,value,address_list[i].split(','))[0]
+                            inter_list[i] = ['NaN', 'NaN','NaN']
 
                     except Exception as e:
                         #print(e,value)
