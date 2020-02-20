@@ -99,6 +99,8 @@ def collect_and_geocode_addresses_batch(array1,address_index,gis,geocoder_list =
                                     inter_list[i] = [value[0]['location']['x'],value[0]['location']['y'],str(value[0]['attributes']['Match_addr']).replace(',','')]
                                     break
                                     #print(inter_list[i],geocoders)
+                                else:
+                                    inter_list[i] = ['NaN', 'NaN','NaN']
                             else:                                    
                                 inter_list[i] = ['NaN', 'NaN','NaN']
                         except Exception as e:
