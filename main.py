@@ -69,7 +69,7 @@ def collect_and_geocode_addresses_batch(array1,address_index,gis,geocoder_list =
             except Exception as e:
                 #print(e)
                 pass
-    
+
     if pass_nan == True:
         for i in range(0,len(address_list)):
             try:
@@ -101,7 +101,7 @@ def collect_and_geocode_addresses_batch(array1,address_index,gis,geocoder_list =
                                     #print(inter_list[i],geocoders)
                                 else:
                                     inter_list[i] = ['NaN', 'NaN','NaN']
-                            else:                                    
+                            else:
                                 inter_list[i] = ['NaN', 'NaN','NaN']
                         except Exception as e:
                             print(e,value,address_list[i].split(','))[0]
@@ -123,7 +123,7 @@ def collect_and_geocode_addresses_batch(array1,address_index,gis,geocoder_list =
             array[k].append(v[0])
 
 
-        
+
     return array
 
 
@@ -132,27 +132,29 @@ def find_index_value(array,value,header_index = 0):
     for index,val in enumerate(array[header_index]):
         if val == value:
             return index
-        
+
     return ''
 
 
 
 #overwrites a feature layer with passed item_id (must have same schema as original service)
 #If no item_id is passed, creates a new feature service named from the credentials file
-def overwrite_feature_layer(csv_file,feature_layer_id,username,password,gis,updates=[],mappings = {}, parameters = {}):
+def overwrite_feature_layer(csv_file,feature_layer_id,username,password,gis,updates=[],mappings = {}, parameters = {},item_props = {}):
     from arcgis.gis import GIS
     from arcgis import features
     from arcgis.features import FeatureLayerCollection
     from arcgis.gis import ContentManager
     import datetime
-    
+
     #add csv to portal
     if feature_layer_id == '' or None:
         print('Creating New Feature Service')
-        csv_item = gis.content.add({}, csv_file)
+        csv_item = gis.content.add(item_properties=item_props,data = csv_file)
 
         #publish portal csv to feature layer with pass params
+
         csv_lyr = csv_item.publish(publish_parameters = parameters)
+        #csv_item.delete()
         #might consider writing item id to credentials?
         return 'New Service Created, item id ' + str(csv_lyr.id)
     else:
@@ -165,8 +167,8 @@ def overwrite_feature_layer(csv_file,feature_layer_id,username,password,gis,upda
             response_1 = inspections_flayer_collection.manager.overwrite(csv_file)
             #response = inspections_flayer_collection.manager.overwrite(csv_path)
             updates.append(str(response_1) + ' - ' + str(date))
-            print(updates[-1])
-            
+            #print(updates[-1])
+
         except Exception as e:
             print('Failed to update feature layer')
             print(e)
@@ -181,7 +183,29 @@ def dump_to_csv(array, out_path = 'out.csv'):
         listwriter = csv.writer(csvfile)
         listwriter.writerows(array)
     return out_path
+def json_to_csv(json_data,name):
 
+    import csv
+    data = json.loads(json_data.text)
+    #print(data[0])
+    with open(name + '.csv', 'w', newline='') as csvfile:
+        w = csv.writer(csvfile, delimiter=',',
+                                quotechar='"', quoting=csv.QUOTE_MINIMAL)
+
+
+        w.writerow(data[0].keys())
+        for r in data:
+            try:
+                w.writerow(r.values())
+            except:
+                out = []
+                for val in r.values():
+                    try:
+                        out.append(val.encode('ascii', 'ignore'))
+                    except:
+                        out.append(val)
+                    w.writerow(out)
+    return name + '.csv'
 
 #This is a super hacky, temporary way to format the top level of a json into an array
 #Needs better handling
@@ -206,25 +230,28 @@ def json_to_array(json_data):
             except:
                 #Wild encodings going on
                 try:
-                    row.append(str(v.encode('ascii','replace')).replace(',',' '))
+                    row.append(str(v.encode('ascii','replace')).replace(',',';'))
                 except:
                     #wild encodings
-                    row.append(str(v).replace(',', ' '))
                     try:
-                        row.append(','.join(v))
+
+                        row.append(str(v).replace(',', ';'))
                     except:
-                        row.append(' ')
+                        try:
+                            row.append(';'.join(v))
+                        except:
+                            pass
         output_array.append(row)
     return output_array
-        
-#Body        
+
+#Body
 if __name__ == '__main__':
-    
-    then = datetime.today()
-    then = then - timedelta(microseconds=then.microsecond)
-    print("\nInitiating script at", then, "\n")
-    
-    
+
+    #then = datetime.today()
+    #then = then - timedelta(microseconds=then.microsecond)
+    #print("\nInitiating script at", then, "\n")
+
+
     #Collect all paramters from config json
     credentials_json = r"credentials.json"
     try:
@@ -233,7 +260,7 @@ if __name__ == '__main__':
             credentials = json.load(f)
             #either arcgis online portal or hosted enterprise
             arcgis_portal = credentials['arcgis_portal']
-            
+
             #agol or portal username. for domain use DOMAIN\\USERNAME eg SAN\\388560
             username = credentials['username']
             password = credentials['password']
@@ -246,23 +273,24 @@ if __name__ == '__main__':
             feature_layer_id = credentials['item_id']
             new_service_name = credentials['new_service_name']
             proxy_bypass = credentials['proxy_bypass']
-            
-            
+
+
             #This helps resolve hitting internal arcgis enterprise servers behind a proxy
             if proxy_bypass != '':
                 os.environ['NO_PROXY'] = proxy_bypass
-            
+
             response = requests.get(json_source)
-            
-    except:
+
+    except Exception as e:
+        print(e)
         print('Missing Values in Credentials json')
-        
-        
-        
-    array = json_to_array(response)   
+
+
+
+    #array = json_to_array(response)
     #Create GIS object from defined portal, username and password
     gis = GIS(arcgis_portal,username,password)
-    
+
     #Add lat and long to each array row is geocoding flag != no
     if geocoding.upper() != 'NO':
         #get the index of the address to pass to the geocoder
@@ -271,15 +299,17 @@ if __name__ == '__main__':
         #change passed lat long headers to those assigned by the bonkers function
         lat = 'Latitude'
         lng = 'Longitude'
-    
+
     #dir_path = os.path.dirname(os.path.realpath(__file__))
-    
+
     #Assumed xy
     #publish params docs available here: https://developers.arcgis.com/rest/users-groups-and-items/publish-item.htm
-    params = {'locationType' : 'coordinates', 'latitudeFieldName' : lat, 'longitudeFieldName' : lng}
-    
+    params = {'locationType' : 'coordinates', 'latitudeFieldName' : lat, 'longitudeFieldName' : lng, 'name' : new_service_name}
+    mapping = {}
     #output csv to script directory
+    array = json_to_array(response)
     csv_object = dump_to_csv(array, out_path = new_service_name + '.csv')
     #push csv to portal
+    #item_props = {'title' : new_service_name}
     overwrite_feature_layer(csv_object,feature_layer_id,username,password,gis,mappings = mapping, parameters = params)
     sys.exit('Complete')
