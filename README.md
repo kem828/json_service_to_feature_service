@@ -1,4 +1,4 @@
-# json_service_to_festure_service
+# json_service_to_feature_service
 <div id="top"></div>
 
 
@@ -9,7 +9,7 @@
 
 
 This is a simple script that pulls a single layer json service and creates\updates a hosted feature service
- (either on AGOL or enterprise ArcGIS Sever
+ (either on AGOL or enterprise ArcGIS Server)
 
 
 
@@ -29,7 +29,8 @@ Change the run.bat file to point to your ArcGIS Pro python environment
 
 1. Open credentials.json
 2. Set the portal location and username and password
-   ```"arcgis_portal" : "https://www.arcgis.com",
+   ```
+   "arcgis_portal" : "https://www.arcgis.com",
    username" : "userNAME",
    password" : "P@$$w0Rd!",
    ```
