@@ -34,7 +34,8 @@ Change the run.bat file to point to your ArcGIS Pro python environment
    password" : "P@$$w0Rd!",
    ```
 3. Set url source of json service
-   ```"json_source" : "https://theres.data.here.org/api/losangeles/business",
+   ```
+   "json_source" : "https://theres.data.here.org/api/losangeles/business",
    
    ```
 4. If lat\long fields exist in the api, set them`
@@ -74,13 +75,6 @@ run the run.bat again to update the portal service
 
 
 
-
-<!-- LICENSE -->
-## License
-
-Distributed under the MIT License. See `LICENSE.txt` for more information.
-
-<p align="right">(<a href="#top">back to top</a>)</p>
 
 
 
