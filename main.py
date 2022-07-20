@@ -225,19 +225,24 @@ def json_to_array(json_data):
     for vals in data:
         row = []
         for k,v in vals.items():
+            
             try:
                 row.append(float(v))
             except:
-
+                
                 #Wild encodings going on
                 try:
+                    
+                    #v = v.replace('\u200b','').replace('\u2011','').replace('\ufeff','').replace('\u25cf','')
+                    v = str(ascii(v)).strip("'")
+                    #v = str(v,'utf-8')
                     row.append(v.replace(',',';'))
                 except Exception as e:
                     print(e)
                     #wild encodings
                     try:
-
-                        row.append(v.encode('utf-8','ignore').replace(',', ';'))
+                        
+                        row.append(v.encode('ascii','ignore').replace(',', ';'))
                     except:
                         try:
                             row.append(';'.join(v))
