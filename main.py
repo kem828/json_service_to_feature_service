@@ -33,8 +33,9 @@ from arcgis.features import FeatureLayerCollection
 #Basically uses batch_geocode for a pass via the primary and the geocode function to fill in the gaps moving down the list.
 #Some additional logic that was written specifically for city of los angeles bureau of engineering services, ie take match >85 with zip
 #Take match >95 without zip
-def collect_and_geocode_addresses_batch(array1,address_index,gis,geocoder_list = [],pass_nan = True,lat_index = False, sr = 4326,batch_size = 1000):
+def collect_and_geocode_addresses_batch(array1,address_index,gis,geocoder_list = [],pass_nan = True,lat_index = False, sr = 4326,batch_size = 1000,lat_name ='Latitude',long_name = 'Longitude'):
     array = array1
+    array[0].extend([lat_name,long_name])
     batches = int(len(array)/batch_size) + 2
     from arcgis.gis import GIS
     from arcgis.geocoding import get_geocoders, batch_geocode, Geocoder, geocode
@@ -48,7 +49,7 @@ def collect_and_geocode_addresses_batch(array1,address_index,gis,geocoder_list =
     except:
         pass
     for r in range(1,batches):
-        #print(r)
+        print(str(r) + ' of ' + str(batches))
         start = batch_size * (r - 1)
         end = batch_size * r
 
@@ -80,7 +81,7 @@ def collect_and_geocode_addresses_batch(array1,address_index,gis,geocoder_list =
                         inter_list[i] = ['NaN', 'NaN','NaN']
                         break
                     try:
-                        #print(geocoders,address_list[i])
+                        print('Second Pass Record ' + str(i))
                         geocoder = Geocoder(geocoders,gis = gis)
                         value = geocode(address_list[i], geocoder = geocoder,out_sr = sr)
                         if len(value) > 0:
@@ -298,10 +299,9 @@ if __name__ == '__main__':
     
     #Create GIS object from defined portal, username and password
     gis = GIS(arcgis_portal,username,password)
-
+    array = json_to_array(response)
     #Add lat and long to each array row is geocoding flag != no
     if geocoding.upper() != 'NO':
-        array = json_to_array(response)
         #get the index of the address to pass to the geocoder
         address_index = find_index_value(array,address)
         array = collect_and_geocode_addresses_batch(array,address_index,gis,geocoder_list = geocoder_list)
@@ -316,7 +316,7 @@ if __name__ == '__main__':
     params = {'locationType' : 'coordinates', 'latitudeFieldName' : lat, 'longitudeFieldName' : lng, 'name' : new_service_name}
     mapping = {}
     #output csv to script directory
-    array = json_to_array(response)
+    
     csv_object = dump_to_csv(array, out_path = new_service_name + '.csv')
     #push csv to portal
     #item_props = {'title' : new_service_name}
