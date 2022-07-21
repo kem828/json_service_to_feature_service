@@ -295,15 +295,16 @@ if __name__ == '__main__':
 
 
 
-    #array = json_to_array(response)
+    
     #Create GIS object from defined portal, username and password
     gis = GIS(arcgis_portal,username,password)
 
     #Add lat and long to each array row is geocoding flag != no
     if geocoding.upper() != 'NO':
+        array = json_to_array(response)
         #get the index of the address to pass to the geocoder
         address_index = find_index_value(array,address)
-        array = collect_and_geocode_addresses_batch(array,address_index,gis)
+        array = collect_and_geocode_addresses_batch(array,address_index,gis,geocoder_list = geocoder_list)
         #change passed lat long headers to those assigned by the bonkers function
         lat = 'Latitude'
         lng = 'Longitude'
