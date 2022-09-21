@@ -33,23 +33,25 @@ from arcgis.features import FeatureLayerCollection
 #Basically uses batch_geocode for a pass via the primary and the geocode function to fill in the gaps moving down the list.
 #Some additional logic that was written specifically for city of los angeles bureau of engineering services, ie take match >85 with zip
 #Take match >95 without zip
-def collect_and_geocode_addresses_batch(array1,address_index,gis,geocoder_list = [],pass_nan = True,lat_index = False, sr = 4326,batch_size = 1000,lat_name ='Latitude',long_name = 'Longitude'):
+def collect_and_geocode_addresses_batch(array1,address_index,gis,geocoder_list = [],pass_nan = True,lat_index = False, sr = 4326, batch_size = 1000,lat_name = 'Latitude',long_name = 'longitude',match_address_name = 'Match_Addr'):
+    import copy
     array = array1
-    array[0].extend([lat_name,long_name])
+    array[0].extend(lat_name,long_name,match_address_name)
     batches = int(len(array)/batch_size) + 2
     from arcgis.gis import GIS
-    from arcgis.geocoding import get_geocoders, batch_geocode, Geocoder, geocode
+    from arcgis.geocoding import batch_geocode, Geocoder, geocode
     address_list = []
-    inter_list = {}
+    inter_dict = {}
     for address in array:
         address_list.append(address[address_index])
+        inter_dict[address[address_index]] = ['NaN', 'NaN','NaN']
     geocoder = Geocoder(geocoder_list[0],gis=gis)
     try:
         del results
     except:
         pass
     for r in range(1,batches):
-        print(str(r) + ' of ' + str(batches))
+        #print(r)
         start = batch_size * (r - 1)
         end = batch_size * r
 
@@ -59,74 +61,38 @@ def collect_and_geocode_addresses_batch(array1,address_index,gis,geocoder_list =
             #print(e)
             results = batch_geocode(address_list[start:end],geocoder = geocoder,out_sr = sr)
         #print(results)
-    for index,value in enumerate(results):
-        try:
-            inter_list[index]
-            continue
-        except:
-            try:
-                if [value['location']['x'],value['location']['y']] != ['NaN', 'NaN']:
-                    inter_list[index] = [value['location']['x'],value['location']['y'],str(value['attributes']['Match_addr']).replace(',','')]
-            except Exception as e:
-                #print(e)
-                pass
+    for r_vals in results:
+        inter_dict[r_vals['address']] = [r_vals['location']['x'],r_vals['location']['y'],str(value['attributes']['Match_addr']).replace(',','')]
+        
+    for geocoders in geocoder_list[1:]:
+        geocoder = Geocoder(geocoders,gis = gis)
+        for address, vals in inter_dict.items():
+            if inter_dict[address] == ['NaN', 'NaN','NaN']:
+                try:
+                    r_vals = geocode(address, geocoder = geocoder,out_sr = sr)
+                except:
+                    continue
+                #print(r_vals)
+                try:
+                    inter_dict[address] = [r_vals[0]['location']['x'],r_vals[0]['location']['y'],str(value['attributes']['Match_addr']).replace(',','')]
+                except:
+                    
+                    pass
+    
+    
+    return_array = []
 
-    if pass_nan == True:
-        for i in range(0,len(address_list)):
-            try:
-                a = inter_list[i]
-            except:
-                for geocoders in geocoder_list[1:]:
-                    if address_list[i] == 'NONE':
-                        inter_list[i] = ['NaN', 'NaN','NaN']
-                        break
-                    try:
-                        print('Second Pass Record ' + str(i))
-                        geocoder = Geocoder(geocoders,gis = gis)
-                        value = geocode(address_list[i], geocoder = geocoder,out_sr = sr)
-                        if len(value) > 0:
-                            if [value[0]['location']['x'],value[0]['location']['y']] != ['NaN', 'NaN'] and int(value[0]['score']) > 85:
-                                inter_list[i] = [value[0]['location']['x'],value[0]['location']['y'],str(value[0]['attributes']['Match_addr']).replace(',','')]
-                                #print(inter_list[i],geocoders)
-                                break
-                        try:
-
-                            value = geocode((address_list[i].split(','))[0], geocoder = geocoder,out_sr = sr)
-                            if len(value) > 0:
-
-                                #if [value[0]['location']['x'],value[0]['location']['y']] != ['NaN', 'NaN'] and int(value[0]['score']) > 95:
-                                if int(value[0]['score']) > 95:
-                                    #print('matched without zip')
-                                    inter_list[i] = [value[0]['location']['x'],value[0]['location']['y'],str(value[0]['attributes']['Match_addr']).replace(',','')]
-                                    break
-                                    #print(inter_list[i],geocoders)
-                                else:
-                                    inter_list[i] = ['NaN', 'NaN','NaN']
-                            else:
-                                inter_list[i] = ['NaN', 'NaN','NaN']
-                        except Exception as e:
-                            print(e,value,address_list[i].split(','))[0]
-                            inter_list[i] = ['NaN', 'NaN','NaN']
-
-                    except Exception as e:
-                        #print(e,value)
-                        inter_list[i] = ['NaN', 'NaN','NaN']
-    else:
-        pass
-    for k,v in inter_list.items():
-        try:
-            array[k].append(v[1])
-        except:
-            array[k].append(v[1])
-        try:
-            array[k].append(v[0])
-        except:
-            array[k].append(v[0])
-
-
-
-    return array
-
+    
+    for row in array:
+        
+        new_row = []
+        addy = inter_dict[row[address_index]][:2]
+        #print(addy,' || ', row)
+        new_row.extend(copy.copy(row))
+        new_row.extend(copy.copy(addy))
+        return_array.append(new_row)
+    #print(return_array)
+    return return_array
 
 #returns the index of a value in a list in a list\array
 def find_index_value(array,value,header_index = 0):
